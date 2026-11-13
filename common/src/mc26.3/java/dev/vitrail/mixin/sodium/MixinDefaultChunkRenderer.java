@@ -10,6 +10,7 @@ import dev.vitrail.sodium.SodiumPasses;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.renderpearl.api.buffers.GpuBuffer;
@@ -146,6 +147,59 @@ public abstract class MixinDefaultChunkRenderer {
 				descriptor);
 
 		return this.vitrail$opened;
+	}
+
+	@Inject(
+		method = "render",
+		at = @At(
+			value = "INVOKE",
+			target = "Lnet/caffeinemc/mods/sodium/client/render/chunk/ShaderChunkRenderer;begin(Lnet/caffeinemc/mods/sodium/client/render/chunk/terrain/TerrainRenderPass;Lnet/minecraft/client/renderer/oit/OitStage;)V",
+			shift = At.Shift.BEFORE
+		),
+		require = 1
+	)
+	private void vitrail$sampler(
+			ChunkRenderMatrices matrices,
+			ChunkRenderListIterable renderLists,
+			TerrainRenderPass renderPass,
+			CameraTransform camera,
+			FogParameters parameters,
+			boolean indexedRenderingEnabled,
+			RenderPass pass,
+			GpuSampler terrainSampler,
+			GpuBufferSlice uniformData,
+			GpuBuffer sectionTimeInfo,
+			@Nullable OitStage stage,
+			CallbackInfo ci
+	) {
+		TerrainDraw.sampler(terrainSampler);
+	}
+
+	@WrapOperation(method = "render", require = 1, at = @At(value = "INVOKE", ordinal = 0,
+			target = "Lnet/caffeinemc/mods/sodium/client/render/chunk/DefaultChunkRenderer;"
+					+ "getCameraTranslation(II)F"))
+	private float vitrail$offsetX(int origin, int camera, Operation<Float> original,
+			@Local(argsOnly = true) CameraTransform transform) {
+		float offset = original.call(origin, camera);
+		return this.vitrail$opened == null ? offset : offset - transform.fracX;
+	}
+
+	@WrapOperation(method = "render", require = 1, at = @At(value = "INVOKE", ordinal = 1,
+			target = "Lnet/caffeinemc/mods/sodium/client/render/chunk/DefaultChunkRenderer;"
+					+ "getCameraTranslation(II)F"))
+	private float vitrail$offsetY(int origin, int camera, Operation<Float> original,
+			@Local(argsOnly = true) CameraTransform transform) {
+		float offset = original.call(origin, camera);
+		return this.vitrail$opened == null ? offset : offset - transform.fracY;
+	}
+
+	@WrapOperation(method = "render", require = 1, at = @At(value = "INVOKE", ordinal = 2,
+			target = "Lnet/caffeinemc/mods/sodium/client/render/chunk/DefaultChunkRenderer;"
+					+ "getCameraTranslation(II)F"))
+	private float vitrail$offsetZ(int origin, int camera, Operation<Float> original,
+			@Local(argsOnly = true) CameraTransform transform) {
+		float offset = original.call(origin, camera);
+		return this.vitrail$opened == null ? offset : offset - transform.fracZ;
 	}
 
 	/**
